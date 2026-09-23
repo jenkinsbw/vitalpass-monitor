@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VitalPass
 
-## Getting Started
+Monitor Core Web Vitals for Magento origins after VitalPass is applied. The app queries the [Chrome UX Report API](https://developer.chrome.com/docs/crux/api) and stores LCP, INP, and CLS history in Postgres.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 22
+- Docker, with the `docker-compose` command available
+
+## Local setup
 
 ```bash
+cp .env.example .env
+npm install
+npm run db:up
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Postgres is published on host port **5433** (`vitalpass` / `vitalpass` / database `vitalpass`) so it does not collide with a local Postgres on 5432.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`db:up` runs `docker-compose up -d`. If your machine has the Compose plugin instead, `docker compose up -d` is the same service.
 
-## Learn More
+## CrUX
 
-To learn more about Next.js, take a look at the following resources:
+Create an API key for the Chrome UX Report API and set `CRUX_API_KEY` in `.env`. Restart `npm run dev` after changing it. Without the key you can still add sites; **Fetch now** stays disabled until the key is present.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Next.js dev server |
+| `npm run lint` | ESLint |
+| `npm run db:up` | Start Postgres |
+| `npm run db:down` | Stop Postgres |
+| `npm run db:migrate` | Create and apply a dev migration |
+| `npm run db:deploy` | Apply committed migrations |
+| `npm run db:status` | Show migration status |
+| `npm run db:generate` | Regenerate the Prisma client |
+| `npm run db:studio` | Open Prisma Studio |
 
-## Deploy on Vercel
+## App
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/` lists monitored origins and the latest snapshot.
+- `/sites/new` adds a site (origin + `PHONE` or `DESKTOP`).
+- `/sites/[id]` shows snapshot history and fetches a new CrUX record.

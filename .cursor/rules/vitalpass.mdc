@@ -1,0 +1,24 @@
+---
+description: VitalPass conventions for TypeScript, Server Components, Zod, and Prisma
+alwaysApply: true
+---
+
+# VitalPass
+
+- Keep TypeScript strict. Do not use `any` or disable checks to get past the compiler.
+- Server Components by default. Add `"use client"` only for interaction such as forms and pending state.
+- Validate boundaries with Zod: form data, environment variables, and external payloads such as CrUX.
+- Read and write the database through `src/lib/db.ts`. Put queries in `src/server/` and mutations in `src/server/actions.ts`.
+- Import Prisma types from `@/generated/prisma/client`. Do not create a second Prisma client.
+- Do not add auth, tenants, or a scheduler. This base monitors sites and stores CrUX snapshots.
+
+```ts
+// Query
+const sites = await listSites();
+
+// Mutation
+export async function createSite(state: ActionState, formData: FormData) {
+  const parsed = createSiteSchema.safeParse({ name: formData.get("name") });
+  if (!parsed.success) return { error: "Name is required." };
+}
+```

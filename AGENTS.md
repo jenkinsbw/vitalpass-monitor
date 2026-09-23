@@ -7,3 +7,24 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# VitalPass
+
+Next.js app that monitors Magento origins with the Chrome UX Report API and stores Core Web Vitals history. No auth and no scheduler in this base.
+
+## Layout
+
+- `src/app/` — routes. Server Components by default.
+- `src/components/ui/` — shadcn/ui.
+- `src/lib/db.ts` — Prisma client singleton. Do not instantiate another client.
+- `src/lib/env.ts` — Zod-validated environment. Import it from server code only.
+- `src/lib/crux/` — CrUX fetch and response parsing.
+- `src/server/` — typed queries. Mutations are Server Actions in `src/server/actions.ts`.
+- `prisma/schema.prisma` — models. Generated client lives in `src/generated/prisma` and is gitignored.
+
+## Conventions
+
+- TypeScript strict. Validate form data, env, and external payloads with Zod.
+- Add `"use client"` only for interaction such as forms and pending state.
+- Do not invent auth, tenants, or a cron job.
+- Local Postgres comes from Docker Compose on host port 5433. Use `npm run db:up`, then `npm run db:migrate`.

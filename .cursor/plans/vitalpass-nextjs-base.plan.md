@@ -10,16 +10,16 @@ todos:
     status: completed
   - id: tooling
     content: shadcn/ui, Zod, env tipado, Prisma client singleton, scripts db:*
-    status: pending
+    status: completed
   - id: crux-client
     content: Cliente CrUX + Server Action para fetch y persistir snapshot
-    status: pending
+    status: completed
   - id: minimal-ui
     content: Páginas lista/detalle de sites + alta de site
-    status: pending
+    status: completed
   - id: ai-docs
     content: AGENTS.md, regla Cursor y README de arranque local
-    status: pending
+    status: completed
 isProject: true
 ---
 
