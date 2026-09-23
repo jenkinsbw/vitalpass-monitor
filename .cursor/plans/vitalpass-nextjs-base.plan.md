@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: db-prisma
     content: Docker Compose Postgres + Prisma schema Site/CruxSnapshot + migrate
-    status: pending
+    status: completed
   - id: tooling
     content: shadcn/ui, Zod, env tipado, Prisma client singleton, scripts db:*
     status: pending
