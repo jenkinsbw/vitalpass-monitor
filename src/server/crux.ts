@@ -4,6 +4,7 @@ import {
   CRUX_FORM_FACTORS,
   CruxError,
   queryOriginRecord,
+  queryUrlRecord,
   type CruxFormFactor,
   type NormalizedCruxMetrics,
 } from "@/lib/crux";
@@ -27,8 +28,12 @@ export type CurrentMonthResult =
       errors: CurrentMonthError[];
     };
 
+type CurrentMonthTarget =
+  | { kind: "origin"; origin: string }
+  | { kind: "url"; url: string };
+
 export async function getCurrentMonthRecords(
-  origin: string,
+  target: CurrentMonthTarget,
 ): Promise<CurrentMonthResult> {
   if (!env.CRUX_API_KEY) {
     return { status: "missing-key" };
@@ -39,11 +44,18 @@ export async function getCurrentMonthRecords(
   const settled = await Promise.all(
     CRUX_FORM_FACTORS.map(async (formFactor) => {
       try {
-        const metrics = await queryOriginRecord({
-          origin,
-          formFactor,
-          apiKey,
-        });
+        const metrics =
+          target.kind === "origin"
+            ? await queryOriginRecord({
+                origin: target.origin,
+                formFactor,
+                apiKey,
+              })
+            : await queryUrlRecord({
+                url: target.url,
+                formFactor,
+                apiKey,
+              });
         return { ok: true as const, formFactor, metrics };
       } catch (error) {
         const message =

@@ -14,8 +14,19 @@ export const CRUX_FORM_FACTORS = ["PHONE", "DESKTOP"] as const;
 
 export type CruxFormFactor = (typeof CRUX_FORM_FACTORS)[number];
 
+type QueryRecordInput = {
+  formFactor: CruxFormFactor;
+  apiKey: string;
+} & ({ origin: string; url?: never } | { url: string; origin?: never });
+
 type QueryOriginRecordInput = {
   origin: string;
+  formFactor: CruxFormFactor;
+  apiKey: string;
+};
+
+type QueryUrlRecordInput = {
+  url: string;
   formFactor: CruxFormFactor;
   apiKey: string;
 };
@@ -24,9 +35,13 @@ export function formatFormFactor(formFactor: CruxFormFactor): string {
   return formFactor === "PHONE" ? "Phone" : "Desktop";
 }
 
+export function homeUrlFromOrigin(origin: string): string {
+  return new URL("/", origin).href;
+}
+
 function messageForStatus(status: number, fallback: string): string {
   if (status === 400) {
-    return "CrUX rejected the origin or form factor.";
+    return "CrUX rejected the origin, URL, or form factor.";
   }
 
   if (status === 403) {
@@ -34,7 +49,7 @@ function messageForStatus(status: number, fallback: string): string {
   }
 
   if (status === 404) {
-    return "CrUX has no data for this origin and form factor.";
+    return "CrUX has no data for this target and form factor.";
   }
 
   if (status === 429) {
@@ -60,11 +75,22 @@ function readGoogleError(body: unknown): string | null {
     : null;
 }
 
-export async function queryOriginRecord(
-  input: QueryOriginRecordInput,
-): Promise<NormalizedCruxMetrics> {
+async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetrics> {
   const url = new URL(CRUX_ENDPOINT);
   url.searchParams.set("key", input.apiKey);
+
+  const bodyPayload =
+    input.origin !== undefined
+      ? {
+          origin: input.origin,
+          formFactor: input.formFactor,
+          metrics: METRICS,
+        }
+      : {
+          url: input.url,
+          formFactor: input.formFactor,
+          metrics: METRICS,
+        };
 
   let response: Response;
 
@@ -75,11 +101,7 @@ export async function queryOriginRecord(
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        origin: input.origin,
-        formFactor: input.formFactor,
-        metrics: METRICS,
-      }),
+      body: JSON.stringify(bodyPayload),
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     });
@@ -96,4 +118,24 @@ export async function queryOriginRecord(
   }
 
   return parseCruxResponse(body);
+}
+
+export function queryOriginRecord(
+  input: QueryOriginRecordInput,
+): Promise<NormalizedCruxMetrics> {
+  return queryRecord({
+    origin: input.origin,
+    formFactor: input.formFactor,
+    apiKey: input.apiKey,
+  });
+}
+
+export function queryUrlRecord(
+  input: QueryUrlRecordInput,
+): Promise<NormalizedCruxMetrics> {
+  return queryRecord({
+    url: input.url,
+    formFactor: input.formFactor,
+    apiKey: input.apiKey,
+  });
 }

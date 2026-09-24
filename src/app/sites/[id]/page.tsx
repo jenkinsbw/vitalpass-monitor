@@ -59,7 +59,7 @@ export default async function SitePage({
           <h2 className="text-lg font-medium">This month</h2>
           <p className="text-sm text-muted-foreground">
             Real-user LCP, INP, and CLS for the current 28-day collection
-            period.
+            period, for the whole origin and the home page.
           </p>
         </div>
         <Suspense fallback={<CurrentMonthChartsFallback />}>
