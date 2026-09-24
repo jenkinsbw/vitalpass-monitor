@@ -10,11 +10,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatFormFactor } from "@/lib/sites";
+import { formatFormFactor, type CruxFormFactor } from "@/lib/crux";
 import { formatCollectedAt } from "@/lib/vitals";
 import { listSites } from "@/server/sites";
 
 export const dynamic = "force-dynamic";
+
+function latestByFormFactor<T extends { formFactor: CruxFormFactor }>(
+  snapshots: T[],
+): T[] {
+  const seen = new Set<CruxFormFactor>();
+  const latest: T[] = [];
+
+  for (const snapshot of snapshots) {
+    if (seen.has(snapshot.formFactor)) {
+      continue;
+    }
+
+    seen.add(snapshot.formFactor);
+    latest.push(snapshot);
+  }
+
+  return latest;
+}
 
 export default async function HomePage() {
   const sites = await listSites();
@@ -45,7 +63,7 @@ export default async function HomePage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {sites.map((site) => {
-            const latest = site.snapshots[0];
+            const latest = latestByFormFactor(site.snapshots);
 
             return (
               <li key={site.id}>
@@ -54,30 +72,40 @@ export default async function HomePage() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         {site.name}
-                        <Badge variant="outline">
-                          {formatFormFactor(site.formFactor)}
-                        </Badge>
                         {site.active ? null : (
                           <Badge variant="secondary">Inactive</Badge>
                         )}
                       </CardTitle>
                       <CardDescription>{site.origin}</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-wrap gap-6">
-                      {latest ? (
-                        <>
-                          <LcpValue milliseconds={latest.lcp} />
-                          <InpValue milliseconds={latest.inp} />
-                          <ClsValue value={latest.cls} />
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs text-muted-foreground">
-                              Collected
-                            </span>
-                            <span className="text-sm font-medium">
-                              {formatCollectedAt(latest.collectedAt)}
-                            </span>
+                    <CardContent className="flex flex-col gap-4">
+                      {latest.length > 0 ? (
+                        latest.map((snapshot) => (
+                          <div
+                            key={snapshot.id}
+                            className="flex flex-wrap gap-6"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                Form factor
+                              </span>
+                              <Badge variant="outline" className="w-fit">
+                                {formatFormFactor(snapshot.formFactor)}
+                              </Badge>
+                            </div>
+                            <LcpValue milliseconds={snapshot.lcp} />
+                            <InpValue milliseconds={snapshot.inp} />
+                            <ClsValue value={snapshot.cls} />
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                Collected
+                              </span>
+                              <span className="text-sm font-medium">
+                                {formatCollectedAt(snapshot.collectedAt)}
+                              </span>
+                            </div>
                           </div>
-                        </>
+                        ))
                       ) : (
                         <p className="text-sm text-muted-foreground">
                           No snapshots yet

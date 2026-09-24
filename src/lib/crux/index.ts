@@ -1,4 +1,9 @@
-export { queryOriginRecord, type CruxFormFactor } from "@/lib/crux/client";
+export {
+  CRUX_FORM_FACTORS,
+  formatFormFactor,
+  queryOriginRecord,
+  type CruxFormFactor,
+} from "@/lib/crux/client";
 export { CruxError } from "@/lib/crux/errors";
 export {
   parseCruxResponse,

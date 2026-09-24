@@ -9,7 +9,12 @@ import { auth, signIn, signOut } from "@/auth";
 import { loginSchema } from "@/lib/auth-schemas";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
-import { CruxError, queryOriginRecord } from "@/lib/crux";
+import {
+  CRUX_FORM_FACTORS,
+  CruxError,
+  formatFormFactor,
+  queryOriginRecord,
+} from "@/lib/crux";
 import { createSiteSchema, OriginError } from "@/lib/sites";
 import { createUserSchema, updateUserSchema } from "@/lib/users";
 import { createSiteRecord, DuplicateSiteError } from "@/server/sites";
@@ -82,7 +87,6 @@ export async function createSite(
   const parsed = createSiteSchema.safeParse({
     name: formData.get("name"),
     origin: formData.get("origin"),
-    formFactor: formData.get("formFactor"),
   });
 
   if (!parsed.success) {
@@ -129,30 +133,44 @@ export async function collectSnapshot(
     return { error: "Set CRUX_API_KEY in .env and restart the server." };
   }
 
-  try {
-    const metrics = await queryOriginRecord({
-      origin: site.origin,
-      formFactor: site.formFactor,
-      apiKey: env.CRUX_API_KEY,
-    });
+  const collectedAt = new Date();
+  const errors: string[] = [];
+  let created = 0;
 
-    await db.cruxSnapshot.create({
-      data: {
-        siteId: site.id,
-        lcp: metrics.lcp,
-        inp: metrics.inp,
-        cls: metrics.cls,
-        collectionPeriod: metrics.collectionPeriod,
-        raw: metrics.raw as Prisma.InputJsonValue,
-      },
-    });
-  } catch (error) {
-    if (error instanceof CruxError) {
-      return { error: error.message };
+  for (const formFactor of CRUX_FORM_FACTORS) {
+    try {
+      const metrics = await queryOriginRecord({
+        origin: site.origin,
+        formFactor,
+        apiKey: env.CRUX_API_KEY,
+      });
+
+      await db.cruxSnapshot.create({
+        data: {
+          siteId: site.id,
+          formFactor,
+          collectedAt,
+          lcp: metrics.lcp,
+          inp: metrics.inp,
+          cls: metrics.cls,
+          collectionPeriod: metrics.collectionPeriod,
+          raw: metrics.raw as Prisma.InputJsonValue,
+        },
+      });
+      created += 1;
+    } catch (error) {
+      if (error instanceof CruxError) {
+        errors.push(`${formatFormFactor(formFactor)}: ${error.message}`);
+        continue;
+      }
+
+      console.error("Failed to collect CrUX snapshot", error);
+      return { error: "Could not collect a snapshot." };
     }
+  }
 
-    console.error("Failed to collect CrUX snapshot", error);
-    return { error: "Could not collect a snapshot." };
+  if (created === 0) {
+    return { error: errors[0] ?? "Could not collect a snapshot." };
   }
 
   revalidatePath("/");

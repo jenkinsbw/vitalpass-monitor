@@ -10,13 +10,19 @@ const METRICS = [
   "cumulative_layout_shift",
 ] as const;
 
-export type CruxFormFactor = "PHONE" | "DESKTOP";
+export const CRUX_FORM_FACTORS = ["PHONE", "DESKTOP"] as const;
+
+export type CruxFormFactor = (typeof CRUX_FORM_FACTORS)[number];
 
 type QueryOriginRecordInput = {
   origin: string;
   formFactor: CruxFormFactor;
   apiKey: string;
 };
+
+export function formatFormFactor(formFactor: CruxFormFactor): string {
+  return formFactor === "PHONE" ? "Phone" : "Desktop";
+}
 
 function messageForStatus(status: number, fallback: string): string {
   if (status === 400) {

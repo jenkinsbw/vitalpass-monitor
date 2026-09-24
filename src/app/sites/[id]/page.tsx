@@ -11,8 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatFormFactor } from "@/lib/crux";
 import { env } from "@/lib/env";
-import { formatFormFactor } from "@/lib/sites";
 import { formatCollectedAt } from "@/lib/vitals";
 import { getSite } from "@/server/sites";
 
@@ -40,9 +40,8 @@ export default async function SitePage({
           >
             Back to sites
           </Link>
-          <h1 className="mt-2 flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
             {site.name}
-            <Badge variant="outline">{formatFormFactor(site.formFactor)}</Badge>
           </h1>
           <p className="text-sm text-muted-foreground">{site.origin}</p>
         </div>
@@ -62,7 +61,7 @@ export default async function SitePage({
             <CardHeader>
               <CardTitle>No snapshots yet</CardTitle>
               <CardDescription>
-                Fetch the current CrUX record for this origin.
+                Fetch the current CrUX record for phone and desktop.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -72,7 +71,12 @@ export default async function SitePage({
               <li key={snapshot.id}>
                 <Card>
                   <CardHeader>
-                    <CardTitle>{formatCollectedAt(snapshot.collectedAt)}</CardTitle>
+                    <CardTitle className="flex flex-wrap items-center gap-2">
+                      {formatCollectedAt(snapshot.collectedAt)}
+                      <Badge variant="outline">
+                        {formatFormFactor(snapshot.formFactor)}
+                      </Badge>
+                    </CardTitle>
                     <CardDescription>
                       Collection period {snapshot.collectionPeriod}
                     </CardDescription>

@@ -7,12 +7,9 @@ export class OriginError extends Error {
   }
 }
 
-export const formFactorSchema = z.enum(["PHONE", "DESKTOP"]);
-
 export const createSiteSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(120, "Name is too long."),
   origin: z.string().trim().min(1, "Origin is required."),
-  formFactor: formFactorSchema,
 });
 
 export function normalizeOrigin(value: string): string {
@@ -35,8 +32,4 @@ export function normalizeOrigin(value: string): string {
   }
 
   return url.origin;
-}
-
-export function formatFormFactor(formFactor: "PHONE" | "DESKTOP"): string {
-  return formFactor === "PHONE" ? "Phone" : "Desktop";
 }

@@ -9,7 +9,7 @@ export type CreateSiteInput = z.infer<typeof createSiteSchema>;
 
 export class DuplicateSiteError extends Error {
   constructor() {
-    super("A site with this origin and form factor already exists.");
+    super("A site with this origin already exists.");
     this.name = "DuplicateSiteError";
   }
 }
@@ -19,8 +19,8 @@ export function listSites() {
     orderBy: { createdAt: "desc" },
     include: {
       snapshots: {
-        orderBy: { collectedAt: "desc" },
-        take: 1,
+        orderBy: [{ collectedAt: "desc" }, { formFactor: "asc" }],
+        take: 2,
       },
     },
   });
@@ -31,7 +31,7 @@ export function getSite(id: string) {
     where: { id },
     include: {
       snapshots: {
-        orderBy: { collectedAt: "desc" },
+        orderBy: [{ collectedAt: "desc" }, { formFactor: "asc" }],
       },
     },
   });
@@ -45,7 +45,6 @@ export async function createSiteRecord(input: CreateSiteInput) {
       data: {
         name: input.name,
         origin,
-        formFactor: input.formFactor,
       },
     });
   } catch (error) {
