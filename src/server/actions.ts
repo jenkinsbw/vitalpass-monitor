@@ -111,26 +111,23 @@ export async function createSite(
   redirect(`/sites/${siteId}`);
 }
 
-export async function collectSnapshot(
-  _state: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function collectSnapshot(formData: FormData): Promise<void> {
   await requireUser();
 
   const siteId = formData.get("siteId");
 
   if (typeof siteId !== "string" || siteId.length === 0) {
-    return { error: "Missing site." };
+    throw new Error("Missing site.");
   }
 
   const site = await db.site.findUnique({ where: { id: siteId } });
 
   if (!site) {
-    return { error: "Site not found." };
+    throw new Error("Site not found.");
   }
 
   if (!env.CRUX_API_KEY) {
-    return { error: "Set CRUX_API_KEY in .env and restart the server." };
+    throw new Error("Set CRUX_API_KEY in .env and restart the server.");
   }
 
   const collectedAt = new Date();
@@ -165,17 +162,45 @@ export async function collectSnapshot(
       }
 
       console.error("Failed to collect CrUX snapshot", error);
-      return { error: "Could not collect a snapshot." };
+      throw new Error("Could not save a snapshot.");
     }
   }
 
   if (created === 0) {
-    return { error: errors[0] ?? "Could not collect a snapshot." };
+    throw new Error(errors[0] ?? "Could not save a snapshot.");
   }
 
   revalidatePath("/");
   revalidatePath(`/sites/${site.id}`);
-  return null;
+}
+
+export async function deleteSnapshot(formData: FormData): Promise<void> {
+  await requireUser();
+
+  const id = formData.get("id");
+  const siteId = formData.get("siteId");
+
+  if (typeof id !== "string" || id.length === 0) {
+    throw new Error("Missing snapshot.");
+  }
+
+  if (typeof siteId !== "string" || siteId.length === 0) {
+    throw new Error("Missing site.");
+  }
+
+  const snapshot = await db.cruxSnapshot.findFirst({
+    where: { id, siteId },
+    select: { id: true, siteId: true },
+  });
+
+  if (!snapshot) {
+    throw new Error("Snapshot not found.");
+  }
+
+  await db.cruxSnapshot.delete({ where: { id: snapshot.id } });
+
+  revalidatePath("/");
+  revalidatePath(`/sites/${snapshot.siteId}`);
 }
 
 export async function createUser(

@@ -6,29 +6,32 @@ import { CollectForm } from "@/components/collect-form";
 import {
   CurrentMonthCharts,
   CurrentMonthChartsFallback,
+  parseCruxScope,
 } from "@/components/current-month-charts";
-import { ClsValue, InpValue, LcpValue } from "@/components/metric-value";
-import { Badge } from "@/components/ui/badge";
+import { SnapshotCard } from "@/components/snapshot-card";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatFormFactor } from "@/lib/crux";
 import { env } from "@/lib/env";
-import { formatCollectedAt } from "@/lib/vitals";
 import { getSite } from "@/server/sites";
 
 export const dynamic = "force-dynamic";
 
 export default async function SitePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    scope?: string | string[];
+  }>;
 }) {
   const { id } = await params;
+  const { scope: scopeParam } = await searchParams;
+  const scope = parseCruxScope(scopeParam);
   const site = await getSite(id);
 
   if (!site) {
@@ -49,32 +52,36 @@ export default async function SitePage({
           <CollectForm siteId={site.id} />
         ) : (
           <p className="max-w-xs text-sm text-muted-foreground">
-            Set CRUX_API_KEY in .env and restart the server to fetch snapshots.
+            Set CRUX_API_KEY in .env and restart the server to save snapshots.
           </p>
         )}
       </div>
 
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-lg font-medium">This month</h2>
-          <p className="text-sm text-muted-foreground">
-            Real-user LCP, INP, and CLS for the current 28-day collection
-            period, for the whole origin and the home page.
-          </p>
-        </div>
+      <section>
         <Suspense fallback={<CurrentMonthChartsFallback />}>
-          <CurrentMonthCharts origin={site.origin} />
+          <CurrentMonthCharts
+            origin={site.origin}
+            siteId={site.id}
+            scope={scope}
+          />
         </Suspense>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Snapshots</h2>
+        <div>
+          <h2 className="text-lg font-medium">Snapshots</h2>
+          <p className="text-sm text-muted-foreground">
+            Saved origin records from Save Snapshot. Expand a snapshot to see
+            the same LCP, INP, and CLS distribution as above.
+          </p>
+        </div>
         {site.snapshots.length === 0 ? (
           <Card>
             <CardHeader>
               <CardTitle>No snapshots yet</CardTitle>
               <CardDescription>
-                Fetch the current CrUX record for phone and desktop.
+                Use Save Snapshot to store the current origin record for phone
+                and desktop.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -82,24 +89,7 @@ export default async function SitePage({
           <ul className="flex flex-col gap-3">
             {site.snapshots.map((snapshot) => (
               <li key={snapshot.id}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex flex-wrap items-center gap-2">
-                      {formatCollectedAt(snapshot.collectedAt)}
-                      <Badge variant="outline">
-                        {formatFormFactor(snapshot.formFactor)}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      Collection period {snapshot.collectionPeriod}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-6">
-                    <LcpValue milliseconds={snapshot.lcp} />
-                    <InpValue milliseconds={snapshot.inp} />
-                    <ClsValue value={snapshot.cls} />
-                  </CardContent>
-                </Card>
+                <SnapshotCard snapshot={snapshot} />
               </li>
             ))}
           </ul>

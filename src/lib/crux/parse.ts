@@ -141,3 +141,13 @@ export function parseCruxResponse(body: unknown): NormalizedCruxMetrics {
     raw: body,
   };
 }
+
+export function tryParseCruxResponse(
+  body: unknown,
+): NormalizedCruxMetrics | null {
+  try {
+    return parseCruxResponse(body);
+  } catch {
+    return null;
+  }
+}
