@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/back-link";
 import { CollectForm } from "@/components/collect-form";
 import { ClsValue, InpValue, LcpValue } from "@/components/metric-value";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +33,9 @@ export default async function SitePage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            href="/"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Back to sites
-          </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+        <div className="flex flex-col items-start gap-3">
+          <BackLink href="/">Back to Sites</BackLink>
+          <h1 className="text-2xl font-semibold tracking-tight">
             {site.name}
           </h1>
           <p className="text-sm text-muted-foreground">{site.origin}</p>

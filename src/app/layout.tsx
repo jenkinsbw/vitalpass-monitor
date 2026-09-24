@@ -37,13 +37,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="text-sm font-semibold tracking-tight">
               VitalPass
             </Link>
-            {user?.email && user.name && user.lastName ? (
-              <UserMenu
-                name={user.name}
-                lastName={user.lastName}
-                email={user.email}
-              />
-            ) : null}
+            {user?.email ? <UserMenu email={user.email} /> : null}
           </div>
         </header>
         <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">

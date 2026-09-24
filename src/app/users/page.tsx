@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { BackLink } from "@/components/back-link";
 import { DeleteUserButton } from "@/components/delete-user-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -9,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCollectedAt } from "@/lib/vitals";
 import { listUsers } from "@/server/users";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ export default async function UsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackLink href="/">Back to Sites</BackLink>
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
@@ -42,19 +43,16 @@ export default async function UsersPage() {
           </CardHeader>
         </Card>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2">
           {users.map((user) => (
             <li key={user.id}>
-              <Card>
-                <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-                  <div className="flex flex-col gap-1">
-                    <CardTitle>
+              <Card size="sm">
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-baseline gap-3">
+                    <CardTitle className="truncate">{user.email}</CardTitle>
+                    <CardDescription className="truncate">
                       {user.name} {user.lastName}
-                    </CardTitle>
-                    <CardDescription>{user.email}</CardDescription>
-                    <p className="text-xs text-muted-foreground">
-                      Created {formatCollectedAt(user.createdAt)}
-                    </p>
+                    </CardDescription>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Link

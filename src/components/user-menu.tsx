@@ -1,23 +1,18 @@
 import Link from "next/link";
 
-import { logout } from "@/server/actions";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { SignOutButton } from "@/components/sign-out-button";
+import { buttonVariants } from "@/components/ui/button";
 
 type UserMenuProps = {
-  name: string;
-  lastName: string;
   email: string;
 };
 
-export function UserMenu({ name, lastName, email }: UserMenuProps) {
+export function UserMenu({ email }: UserMenuProps) {
   return (
     <div className="flex items-center gap-3">
-      <div className="hidden text-right sm:block">
-        <p className="text-sm font-medium leading-none">
-          {name} {lastName}
-        </p>
-        <p className="text-xs text-muted-foreground">{email}</p>
-      </div>
+      <p className="max-w-40 truncate text-sm text-muted-foreground sm:max-w-none">
+        {email}
+      </p>
       <div className="flex items-center gap-2">
         <Link
           href="/users"
@@ -25,11 +20,7 @@ export function UserMenu({ name, lastName, email }: UserMenuProps) {
         >
           Users
         </Link>
-        <form action={logout}>
-          <Button type="submit" variant="outline" size="sm">
-            Sign out
-          </Button>
-        </form>
+        <SignOutButton />
       </div>
     </div>
   );
