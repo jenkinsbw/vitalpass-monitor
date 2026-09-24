@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+
+import { auth } from "@/auth";
+import { UserMenu } from "@/components/user-menu";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,7 +22,10 @@ export const metadata: Metadata = {
   description: "Monitor Core Web Vitals with the Chrome UX Report.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await auth();
+  const user = session?.user;
+
   return (
     <html
       lang="en"
@@ -26,10 +33,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <header className="border-b">
-          <div className="mx-auto flex h-14 w-full max-w-5xl items-center px-4">
+          <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
             <Link href="/" className="text-sm font-semibold tracking-tight">
               VitalPass
             </Link>
+            {user?.email && user.name && user.lastName ? (
+              <UserMenu
+                name={user.name}
+                lastName={user.lastName}
+                email={user.email}
+              />
+            ) : null}
           </div>
         </header>
         <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">

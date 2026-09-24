@@ -10,7 +10,7 @@ alwaysApply: true
 - Validate boundaries with Zod: form data, environment variables, and external payloads such as CrUX.
 - Read and write the database through `src/lib/db.ts`. Put queries in `src/server/` and mutations in `src/server/actions.ts`.
 - Import Prisma types from `@/generated/prisma/client`. Do not create a second Prisma client.
-- Do not add auth, tenants, or a scheduler. This base monitors sites and stores CrUX snapshots.
+- Auth is Auth.js (`src/auth.ts`) with email/password Credentials and JWT sessions. No public registration; seed the admin with `npm run db:seed`. Protect mutations with `auth()`. Do not invent tenants or a scheduler.
 
 ```ts
 // Query

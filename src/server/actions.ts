@@ -1,9 +1,12 @@
 "use server";
 
 import { Prisma } from "@/generated/prisma/client";
+import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { auth, signIn, signOut } from "@/auth";
+import { loginSchema } from "@/lib/auth-schemas";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { CruxError, queryOriginRecord } from "@/lib/crux";
@@ -18,10 +21,55 @@ function firstIssue(error: { issues: { message: string }[] }): string {
   return error.issues[0]?.message ?? "Check the form and try again.";
 }
 
+async function requireUser() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  return session.user;
+}
+
+export async function login(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { error: firstIssue(parsed.error) };
+  }
+
+  try {
+    await signIn("credentials", {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      redirectTo: "/",
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { error: "Invalid email or password." };
+    }
+    throw error;
+  }
+
+  return null;
+}
+
+export async function logout() {
+  await signOut({ redirectTo: "/login" });
+}
+
 export async function createSite(
   _state: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireUser();
+
   const parsed = createSiteSchema.safeParse({
     name: formData.get("name"),
     origin: formData.get("origin"),
@@ -54,6 +102,8 @@ export async function collectSnapshot(
   _state: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  await requireUser();
+
   const siteId = formData.get("siteId");
 
   if (typeof siteId !== "string" || siteId.length === 0) {

@@ -10,11 +10,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # VitalPass
 
-Next.js app that monitors Magento origins with the Chrome UX Report API and stores Core Web Vitals history. No auth and no scheduler in this base.
+Next.js app that monitors Magento origins with the Chrome UX Report API and stores Core Web Vitals history. Auth via Auth.js (Credentials + JWT). No public registration (seed admin + future in-app user CRUD). No scheduler in this base.
 
 ## Layout
 
 - `src/app/` — routes. Server Components by default.
+- `src/auth.ts` — Auth.js config (`handlers`, `auth`, `signIn`, `signOut`).
+- `src/proxy.ts` — Auth.js route protection (Next.js 16 `proxy` convention).
 - `src/components/ui/` — shadcn/ui.
 - `src/lib/db.ts` — Prisma client singleton. Do not instantiate another client.
 - `src/lib/env.ts` — Zod-validated environment. Import it from server code only.
@@ -26,5 +28,5 @@ Next.js app that monitors Magento origins with the Chrome UX Report API and stor
 
 - TypeScript strict. Validate form data, env, and external payloads with Zod.
 - Add `"use client"` only for interaction such as forms and pending state.
-- Do not invent auth, tenants, or a cron job.
+- Protect mutations with `auth()` / session checks. Do not invent tenants or a cron job.
 - Local Postgres comes from Docker Compose on host port 5433. Use `npm run db:up`, then `npm run db:migrate`.
