@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { BackLink } from "@/components/back-link";
 import { CollectForm } from "@/components/collect-form";
+import {
+  CurrentMonthCharts,
+  CurrentMonthChartsFallback,
+} from "@/components/current-month-charts";
 import { ClsValue, InpValue, LcpValue } from "@/components/metric-value";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,6 +53,19 @@ export default async function SitePage({
           </p>
         )}
       </div>
+
+      <section className="flex flex-col gap-3">
+        <div>
+          <h2 className="text-lg font-medium">This month</h2>
+          <p className="text-sm text-muted-foreground">
+            Real-user LCP, INP, and CLS for the current 28-day collection
+            period.
+          </p>
+        </div>
+        <Suspense fallback={<CurrentMonthChartsFallback />}>
+          <CurrentMonthCharts origin={site.origin} />
+        </Suspense>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-medium">Snapshots</h2>

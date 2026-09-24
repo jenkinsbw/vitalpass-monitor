@@ -1,0 +1,105 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { VitalsDistributionChart } from "@/components/vitals-distribution-chart";
+import { formatFormFactor } from "@/lib/crux";
+import { formatCollectionPeriod } from "@/lib/vitals";
+import { getCurrentMonthRecords } from "@/server/crux";
+
+export async function CurrentMonthCharts({ origin }: { origin: string }) {
+  const result = await getCurrentMonthRecords(origin);
+
+  if (result.status === "missing-key") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>CrUX API key required</CardTitle>
+          <CardDescription>
+            Set CRUX_API_KEY in .env and restart the server to load this
+            month&apos;s field data.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (result.records.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>No field data</CardTitle>
+          <CardDescription>
+            {result.errors[0]?.message ??
+              "CrUX has no data for this origin."}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {result.records.map((record) => (
+        <Card key={record.formFactor}>
+          <CardHeader>
+            <CardTitle>{formatFormFactor(record.formFactor)}</CardTitle>
+            <CardDescription>
+              {formatCollectionPeriod(record.metrics.collectionPeriod)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VitalsDistributionChart
+              lcp={{
+                p75: record.metrics.lcp,
+                distribution: record.metrics.lcpDistribution,
+              }}
+              inp={{
+                p75: record.metrics.inp,
+                distribution: record.metrics.inpDistribution,
+              }}
+              cls={{
+                p75: record.metrics.cls,
+                distribution: record.metrics.clsDistribution,
+              }}
+            />
+          </CardContent>
+        </Card>
+      ))}
+      {result.errors.map((error) => (
+        <Card key={error.formFactor}>
+          <CardHeader>
+            <CardTitle>{formatFormFactor(error.formFactor)}</CardTitle>
+            <CardDescription>{error.message}</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function CurrentMonthChartsFallback() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {["Phone", "Desktop"].map((label) => (
+        <Card key={label}>
+          <CardHeader>
+            <CardTitle>{label}</CardTitle>
+            <CardDescription>Loading the current 28-day period…</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {["LCP", "INP", "CLS"].map((metric) => (
+              <div key={metric} className="flex flex-col gap-2">
+                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

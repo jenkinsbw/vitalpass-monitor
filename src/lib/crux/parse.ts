@@ -1,9 +1,13 @@
 import { CruxError } from "@/lib/crux/errors";
+import type { VitalsDistribution } from "@/lib/vitals";
 
 export type NormalizedCruxMetrics = {
   lcp: number | null;
   inp: number | null;
   cls: number | null;
+  lcpDistribution: VitalsDistribution | null;
+  inpDistribution: VitalsDistribution | null;
+  clsDistribution: VitalsDistribution | null;
   collectionPeriod: string;
   raw: unknown;
 };
@@ -31,6 +35,51 @@ function readP75(metric: unknown): number | null {
   }
 
   return null;
+}
+
+function readDensity(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "" && value !== "NaN") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readDistribution(metric: unknown): VitalsDistribution | null {
+  if (!isRecord(metric) || !Array.isArray(metric.histogram)) {
+    return null;
+  }
+
+  const densities = metric.histogram.slice(0, 3).map((bin) => {
+    if (!isRecord(bin)) {
+      return null;
+    }
+
+    return readDensity(bin.density);
+  });
+
+  const [good, needsImprovement, poor] = densities;
+
+  if (
+    densities.length < 3 ||
+    good === null ||
+    good === undefined ||
+    needsImprovement === null ||
+    needsImprovement === undefined ||
+    poor === null ||
+    poor === undefined
+  ) {
+    return null;
+  }
+
+  return { good, needsImprovement, poor };
 }
 
 function formatDate(value: unknown): string | null {
@@ -85,6 +134,9 @@ export function parseCruxResponse(body: unknown): NormalizedCruxMetrics {
     lcp: readP75(metrics.largest_contentful_paint),
     inp: readP75(metrics.interaction_to_next_paint),
     cls: readP75(metrics.cumulative_layout_shift),
+    lcpDistribution: readDistribution(metrics.largest_contentful_paint),
+    inpDistribution: readDistribution(metrics.interaction_to_next_paint),
+    clsDistribution: readDistribution(metrics.cumulative_layout_shift),
     collectionPeriod,
     raw: body,
   };
