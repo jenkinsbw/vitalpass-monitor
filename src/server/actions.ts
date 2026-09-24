@@ -11,7 +11,16 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { CruxError, queryOriginRecord } from "@/lib/crux";
 import { createSiteSchema, OriginError } from "@/lib/sites";
+import { createUserSchema, updateUserSchema } from "@/lib/users";
 import { createSiteRecord, DuplicateSiteError } from "@/server/sites";
+import {
+  createUserRecord,
+  deleteUserRecord,
+  DuplicateEmailError,
+  LastUserError,
+  updateUserRecord,
+  UserNotFoundError,
+} from "@/server/users";
 
 export type ActionState = {
   error: string;
@@ -148,5 +157,113 @@ export async function collectSnapshot(
 
   revalidatePath("/");
   revalidatePath(`/sites/${site.id}`);
+  return null;
+}
+
+export async function createUser(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const parsed = createUserSchema.safeParse({
+    email: formData.get("email"),
+    name: formData.get("name"),
+    lastName: formData.get("lastName"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { error: firstIssue(parsed.error) };
+  }
+
+  try {
+    await createUserRecord(parsed.data);
+  } catch (error) {
+    if (error instanceof DuplicateEmailError) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to create user", error);
+    return { error: "Could not create the user." };
+  }
+
+  revalidatePath("/users");
+  redirect("/users");
+}
+
+export async function updateUser(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const password = formData.get("password");
+
+  const parsed = updateUserSchema.safeParse({
+    id: formData.get("id"),
+    email: formData.get("email"),
+    name: formData.get("name"),
+    lastName: formData.get("lastName"),
+    password:
+      typeof password === "string" && password.length > 0
+        ? password
+        : undefined,
+  });
+
+  if (!parsed.success) {
+    return { error: firstIssue(parsed.error) };
+  }
+
+  try {
+    await updateUserRecord(parsed.data);
+  } catch (error) {
+    if (
+      error instanceof DuplicateEmailError ||
+      error instanceof UserNotFoundError
+    ) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to update user", error);
+    return { error: "Could not update the user." };
+  }
+
+  revalidatePath("/users");
+  revalidatePath(`/users/${parsed.data.id}`);
+  redirect("/users");
+}
+
+export async function deleteUser(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const sessionUser = await requireUser();
+
+  const id = formData.get("id");
+
+  if (typeof id !== "string" || id.length === 0) {
+    return { error: "Missing user." };
+  }
+
+  if (sessionUser.id === id) {
+    return { error: "You cannot delete your own account." };
+  }
+
+  try {
+    await deleteUserRecord(id);
+  } catch (error) {
+    if (
+      error instanceof LastUserError ||
+      error instanceof UserNotFoundError
+    ) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to delete user", error);
+    return { error: "Could not delete the user." };
+  }
+
+  revalidatePath("/users");
   return null;
 }

@@ -1,5 +1,7 @@
+import Link from "next/link";
+
 import { logout } from "@/server/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 type UserMenuProps = {
   name: string;
@@ -16,11 +18,19 @@ export function UserMenu({ name, lastName, email }: UserMenuProps) {
         </p>
         <p className="text-xs text-muted-foreground">{email}</p>
       </div>
-      <form action={logout}>
-        <Button type="submit" variant="outline" size="sm">
-          Sign out
-        </Button>
-      </form>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/users"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Users
+        </Link>
+        <form action={logout}>
+          <Button type="submit" variant="outline" size="sm">
+            Sign out
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
