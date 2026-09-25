@@ -14,6 +14,13 @@ export class DuplicateSiteError extends Error {
   }
 }
 
+export class SiteNotFoundError extends Error {
+  constructor() {
+    super("Site not found.");
+    this.name = "SiteNotFoundError";
+  }
+}
+
 export function listSites() {
   return db.site.findMany({
     orderBy: { createdAt: "desc" },
@@ -43,6 +50,23 @@ export async function createSiteRecord(input: CreateSiteInput) {
       error.code === "P2002"
     ) {
       throw new DuplicateSiteError();
+    }
+
+    throw error;
+  }
+}
+
+export async function deleteSiteRecord(id: string) {
+  try {
+    return await db.site.delete({
+      where: { id },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      throw new SiteNotFoundError();
     }
 
     throw error;

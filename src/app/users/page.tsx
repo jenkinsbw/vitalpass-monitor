@@ -1,3 +1,4 @@
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 
 import { auth } from "@/auth";
@@ -28,7 +29,11 @@ export default async function UsersPage() {
             Accounts that can sign in to VitalPass.
           </p>
         </div>
-        <Link href="/users/new" className={buttonVariants()}>
+        <Link
+          href="/users/new"
+          className={buttonVariants({ variant: "success" })}
+        >
+          <PlusIcon data-icon="inline-start" />
           Add user
         </Link>
       </div>
@@ -46,24 +51,21 @@ export default async function UsersPage() {
         <ul className="flex flex-col gap-2">
           {users.map((user) => (
             <li key={user.id}>
-              <Card size="sm">
+              <Card
+                size="sm"
+                className="relative transition-colors hover:bg-muted/40"
+              >
                 <CardHeader className="flex flex-row items-center justify-between gap-4">
-                  <div className="flex min-w-0 items-baseline gap-3">
+                  <Link
+                    href={`/users/${user.id}`}
+                    className="flex min-w-0 flex-1 items-baseline gap-3 after:absolute after:inset-0"
+                  >
                     <CardTitle className="truncate">{user.email}</CardTitle>
                     <CardDescription className="truncate">
                       {user.name} {user.lastName}
                     </CardDescription>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Link
-                      href={`/users/${user.id}`}
-                      className={buttonVariants({
-                        variant: "outline",
-                        size: "sm",
-                      })}
-                    >
-                      Edit
-                    </Link>
+                  </Link>
+                  <div className="relative z-10 shrink-0">
                     <DeleteUserButton
                       userId={user.id}
                       disabled={user.id === currentUserId}

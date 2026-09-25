@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2Icon } from "lucide-react";
 import { useActionState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
@@ -48,8 +49,16 @@ export function DeleteSnapshotButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger
-        render={<Button variant="destructive" size="sm" type="button" />}
+        render={
+          <Button
+            variant="destructive"
+            size="sm"
+            type="button"
+            className="cursor-pointer"
+          />
+        }
       >
+        <Trash2Icon data-icon="inline-start" />
         Delete
       </AlertDialogTrigger>
       <AlertDialogContent>

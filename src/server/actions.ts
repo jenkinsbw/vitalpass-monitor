@@ -15,7 +15,12 @@ import {
   getSnapshotDetail,
   listSnapshotPage,
 } from "@/server/snapshots";
-import { createSiteRecord, DuplicateSiteError } from "@/server/sites";
+import {
+  createSiteRecord,
+  deleteSiteRecord,
+  DuplicateSiteError,
+  SiteNotFoundError,
+} from "@/server/sites";
 import {
   createUserRecord,
   deleteUserRecord,
@@ -116,6 +121,33 @@ export async function createSite(
 
   revalidatePath("/");
   redirect(`/sites/${siteId}`);
+}
+
+export async function deleteSite(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const id = formData.get("id");
+
+  if (typeof id !== "string" || id.length === 0) {
+    return { error: "Missing site." };
+  }
+
+  try {
+    await deleteSiteRecord(id);
+  } catch (error) {
+    if (error instanceof SiteNotFoundError) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to delete site", error);
+    return { error: "Could not delete the site." };
+  }
+
+  revalidatePath("/");
+  redirect("/");
 }
 
 export async function setWeeklyCheck(
@@ -367,5 +399,5 @@ export async function deleteUser(
   }
 
   revalidatePath("/users");
-  return null;
+  redirect("/users");
 }

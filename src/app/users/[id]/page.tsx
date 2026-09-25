@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { BackLink } from "@/components/back-link";
 import { UserForm } from "@/components/user-form";
 import { getUser } from "@/server/users";
@@ -10,7 +11,7 @@ export default async function EditUserPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getUser(id);
+  const [user, session] = await Promise.all([getUser(id), auth()]);
 
   if (!user) {
     notFound();
@@ -23,7 +24,10 @@ export default async function EditUserPage({
         <h1 className="text-2xl font-semibold tracking-tight">Edit user</h1>
         <p className="text-sm text-muted-foreground">{user.email}</p>
       </div>
-      <UserForm user={user} />
+      <UserForm
+        user={user}
+        allowDelete={session?.user?.id !== user.id}
+      />
     </div>
   );
 }

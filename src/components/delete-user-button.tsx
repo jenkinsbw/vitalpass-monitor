@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2Icon } from "lucide-react";
 import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,14 +22,26 @@ const initialState: ActionState = null;
 type DeleteUserButtonProps = {
   userId: string;
   disabled?: boolean;
+  size?: "default" | "sm";
 };
 
-export function DeleteUserButton({ userId, disabled }: DeleteUserButtonProps) {
+export function DeleteUserButton({
+  userId,
+  disabled,
+  size = "sm",
+}: DeleteUserButtonProps) {
   const [state, action, pending] = useActionState(deleteUser, initialState);
 
   if (disabled) {
     return (
-      <Button type="button" variant="destructive" size="sm" disabled>
+      <Button
+        type="button"
+        variant="destructive"
+        size={size}
+        disabled
+        className="cursor-not-allowed disabled:pointer-events-auto"
+      >
+        <Trash2Icon data-icon="inline-start" />
         Delete
       </Button>
     );
@@ -40,12 +53,14 @@ export function DeleteUserButton({ userId, disabled }: DeleteUserButtonProps) {
         render={
           <Button
             variant="destructive"
-            size="sm"
+            size={size}
             type="button"
             disabled={pending}
+            className="cursor-pointer"
           />
         }
       >
+        <Trash2Icon data-icon="inline-start" />
         {pending ? "Deleting…" : "Delete"}
       </AlertDialogTrigger>
       <AlertDialogContent>
