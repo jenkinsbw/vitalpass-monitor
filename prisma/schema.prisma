@@ -27,12 +27,26 @@ model User {
 }
 
 model Site {
-  id        String         @id @default(cuid())
-  name      String
-  origin    String         @unique
-  active    Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  snapshots Snapshot[]
+  id                  String     @id @default(cuid())
+  name                String
+  origin              String     @unique
+  active              Boolean    @default(true)
+  weeklyCheckEnabled  Boolean    @default(false)
+  createdAt           DateTime   @default(now())
+  snapshots           Snapshot[]
+  alerts              Alert[]
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  lcp       Float?
+  inp       Float?
+  cls       Float?
+
+  @@index([siteId, createdAt])
 }
 
 model Snapshot {

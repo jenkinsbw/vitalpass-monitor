@@ -28,6 +28,17 @@ export function rateCls(value: number): VitalRating {
   return "poor";
 }
 
+export function leavesGoodRange(metrics: {
+  lcp: number | null;
+  inp: number | null;
+  cls: number | null;
+}): boolean {
+  if (metrics.lcp !== null && rateLcp(metrics.lcp) !== "good") return true;
+  if (metrics.inp !== null && rateInp(metrics.inp) !== "good") return true;
+  if (metrics.cls !== null && rateCls(metrics.cls) !== "good") return true;
+  return false;
+}
+
 export function formatLcp(milliseconds: number | null): string {
   if (milliseconds === null) return "—";
   return `${(milliseconds / 1000).toFixed(2)} s`;

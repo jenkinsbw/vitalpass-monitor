@@ -93,6 +93,7 @@ export async function createSite(
   const parsed = createSiteSchema.safeParse({
     name: formData.get("name"),
     origin: formData.get("origin"),
+    weeklyCheckEnabled: formData.get("weeklyCheckEnabled") === "on",
   });
 
   if (!parsed.success) {
@@ -115,6 +116,44 @@ export async function createSite(
 
   revalidatePath("/");
   redirect(`/sites/${siteId}`);
+}
+
+export async function setWeeklyCheck(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const siteId = formData.get("siteId");
+  const enabled = formData.get("enabled");
+
+  if (typeof siteId !== "string" || siteId.length === 0) {
+    return { error: "Missing site." };
+  }
+
+  if (enabled !== "true" && enabled !== "false") {
+    return { error: "Missing weekly check setting." };
+  }
+
+  const site = await db.site.findUnique({ where: { id: siteId } });
+
+  if (!site) {
+    return { error: "Site not found." };
+  }
+
+  await db.site.update({
+    where: { id: site.id },
+    data: { weeklyCheckEnabled: enabled === "true" },
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/sites/${site.id}`);
+  return {
+    success:
+      enabled === "true"
+        ? "Weekly check turned on."
+        : "Weekly check turned off.",
+  };
 }
 
 export async function collectSnapshot(

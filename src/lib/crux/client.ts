@@ -32,6 +32,11 @@ type QueryOriginRecordInput = {
   apiKey: string;
 };
 
+type QueryOriginAggregateInput = {
+  origin: string;
+  apiKey: string;
+};
+
 type QueryUrlRecordInput = {
   url: string;
   formFactor: CruxFormFactor;
@@ -129,6 +134,13 @@ function recordPayload(input: QueryRecordInput) {
   };
 }
 
+function originAggregatePayload(origin: string) {
+  return {
+    origin,
+    metrics: METRICS,
+  };
+}
+
 async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetrics> {
   const body = await postCrux(CRUX_ENDPOINT, input.apiKey, recordPayload(input));
   return parseCruxResponse(body);
@@ -150,6 +162,17 @@ export function queryOriginRecord(
     formFactor: input.formFactor,
     apiKey: input.apiKey,
   });
+}
+
+export async function queryOriginAggregate(
+  input: QueryOriginAggregateInput,
+): Promise<NormalizedCruxMetrics> {
+  const body = await postCrux(
+    CRUX_ENDPOINT,
+    input.apiKey,
+    originAggregatePayload(input.origin),
+  );
+  return parseCruxResponse(body);
 }
 
 export function queryUrlRecord(

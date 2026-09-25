@@ -34,6 +34,7 @@ export async function createSiteRecord(input: CreateSiteInput) {
       data: {
         name: input.name,
         origin,
+        weeklyCheckEnabled: input.weeklyCheckEnabled,
       },
     });
   } catch (error) {

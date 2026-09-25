@@ -3,6 +3,7 @@ export {
   formatCruxScope,
   formatFormFactor,
   homeUrlFromOrigin,
+  queryOriginAggregate,
   queryOriginHistory,
   queryOriginRecord,
   queryUrlHistory,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -51,6 +52,9 @@ export default async function HomePage() {
                     <CardDescription className="truncate">
                       {site.origin}
                     </CardDescription>
+                    {site.weeklyCheckEnabled ? (
+                      <Badge variant="secondary">Weekly check</Badge>
+                    ) : null}
                   </CardHeader>
                 </Card>
               </Link>

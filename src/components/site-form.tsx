@@ -28,6 +28,17 @@ export function SiteForm() {
           inputMode="url"
         />
       </div>
+      <div className="flex items-start gap-2">
+        <input
+          id="weeklyCheckEnabled"
+          name="weeklyCheckEnabled"
+          type="checkbox"
+          className="mt-0.5 size-4 accent-primary"
+        />
+        <Label htmlFor="weeklyCheckEnabled" className="font-normal">
+          Check this origin every week
+        </Label>
+      </div>
       {state?.error ? (
         <p role="alert" className="text-sm text-destructive">
           {state.error}
