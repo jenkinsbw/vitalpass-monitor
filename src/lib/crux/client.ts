@@ -1,8 +1,15 @@
 import { CruxError } from "@/lib/crux/errors";
+import {
+  HISTORY_WEEKS,
+  parseCruxHistoryResponse,
+  type CruxHistoryPoint,
+} from "@/lib/crux/history";
 import { parseCruxResponse, type NormalizedCruxMetrics } from "@/lib/crux/parse";
 
 const CRUX_ENDPOINT =
   "https://chromeuxreport.googleapis.com/v1/records:queryRecord";
+const CRUX_HISTORY_ENDPOINT =
+  "https://chromeuxreport.googleapis.com/v1/records:queryHistoryRecord";
 
 const METRICS = [
   "largest_contentful_paint",
@@ -79,22 +86,9 @@ function readGoogleError(body: unknown): string | null {
     : null;
 }
 
-async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetrics> {
-  const url = new URL(CRUX_ENDPOINT);
-  url.searchParams.set("key", input.apiKey);
-
-  const bodyPayload =
-    input.origin !== undefined
-      ? {
-          origin: input.origin,
-          formFactor: input.formFactor,
-          metrics: METRICS,
-        }
-      : {
-          url: input.url,
-          formFactor: input.formFactor,
-          metrics: METRICS,
-        };
+async function postCrux(endpoint: string, apiKey: string, payload: unknown): Promise<unknown> {
+  const url = new URL(endpoint);
+  url.searchParams.set("key", apiKey);
 
   let response: Response;
 
@@ -105,7 +99,7 @@ async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetri
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(bodyPayload),
+      body: JSON.stringify(payload),
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     });
@@ -121,7 +115,31 @@ async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetri
     throw new CruxError(messageForStatus(response.status, fallback), response.status);
   }
 
+  return body;
+}
+
+function recordPayload(input: QueryRecordInput) {
+  const target =
+    input.origin !== undefined ? { origin: input.origin } : { url: input.url };
+
+  return {
+    ...target,
+    formFactor: input.formFactor,
+    metrics: METRICS,
+  };
+}
+
+async function queryRecord(input: QueryRecordInput): Promise<NormalizedCruxMetrics> {
+  const body = await postCrux(CRUX_ENDPOINT, input.apiKey, recordPayload(input));
   return parseCruxResponse(body);
+}
+
+async function queryHistoryRecord(input: QueryRecordInput): Promise<CruxHistoryPoint[]> {
+  const body = await postCrux(CRUX_HISTORY_ENDPOINT, input.apiKey, {
+    ...recordPayload(input),
+    collectionPeriodCount: HISTORY_WEEKS,
+  });
+  return parseCruxHistoryResponse(body);
 }
 
 export function queryOriginRecord(
@@ -138,6 +156,26 @@ export function queryUrlRecord(
   input: QueryUrlRecordInput,
 ): Promise<NormalizedCruxMetrics> {
   return queryRecord({
+    url: input.url,
+    formFactor: input.formFactor,
+    apiKey: input.apiKey,
+  });
+}
+
+export function queryOriginHistory(
+  input: QueryOriginRecordInput,
+): Promise<CruxHistoryPoint[]> {
+  return queryHistoryRecord({
+    origin: input.origin,
+    formFactor: input.formFactor,
+    apiKey: input.apiKey,
+  });
+}
+
+export function queryUrlHistory(
+  input: QueryUrlRecordInput,
+): Promise<CruxHistoryPoint[]> {
+  return queryHistoryRecord({
     url: input.url,
     formFactor: input.formFactor,
     apiKey: input.apiKey,

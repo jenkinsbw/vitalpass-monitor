@@ -1,6 +1,6 @@
 import type { CruxFormFactor } from "@/lib/crux";
 
-export const RECENT_SNAPSHOT_LIMIT = 10;
+export const SNAPSHOT_PAGE_SIZE = 10;
 
 export const CRUX_SCOPES = ["ORIGIN", "HOME"] as const;
 
@@ -9,6 +9,12 @@ export type CruxScopeName = (typeof CRUX_SCOPES)[number];
 export type SnapshotSummary = {
   id: string;
   collectedAt: string;
+};
+
+export type SnapshotPage = {
+  snapshots: SnapshotSummary[];
+  page: number;
+  pageCount: number;
 };
 
 export type SnapshotRecordView = {

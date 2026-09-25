@@ -14,30 +14,34 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import {
   CRUX_SCOPES,
-  RECENT_SNAPSHOT_LIMIT,
+  SNAPSHOT_PAGE_SIZE,
   type SnapshotDetail,
-  type SnapshotSummary,
+  type SnapshotPage,
 } from "@/lib/snapshots";
 
-export async function listRecentSnapshots(siteId: string): Promise<{
-  snapshots: SnapshotSummary[];
-  hasMore: boolean;
-}> {
+export async function listSnapshotPage(
+  siteId: string,
+  page: number,
+): Promise<SnapshotPage> {
+  const total = await db.snapshot.count({ where: { siteId } });
+  const pageCount = Math.max(1, Math.ceil(total / SNAPSHOT_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, Math.floor(page)), pageCount);
+
   const rows = await db.snapshot.findMany({
     where: { siteId },
     orderBy: { collectedAt: "desc" },
-    take: RECENT_SNAPSHOT_LIMIT + 1,
+    skip: (safePage - 1) * SNAPSHOT_PAGE_SIZE,
+    take: SNAPSHOT_PAGE_SIZE,
     select: { id: true, collectedAt: true },
   });
 
-  const hasMore = rows.length > RECENT_SNAPSHOT_LIMIT;
-
   return {
-    snapshots: rows.slice(0, RECENT_SNAPSHOT_LIMIT).map((row) => ({
+    snapshots: rows.map((row) => ({
       id: row.id,
       collectedAt: row.collectedAt.toISOString(),
     })),
-    hasMore,
+    page: safePage,
+    pageCount,
   };
 }
 

@@ -52,10 +52,7 @@ export default async function SitePage({
           </Suspense>
         </section>
 
-        <SnapshotList
-          siteId={site.id}
-          snapshotCount={site._count.snapshots}
-        />
+        <SnapshotList siteId={site.id} />
       </div>
     </SnapshotRefreshProvider>
   );

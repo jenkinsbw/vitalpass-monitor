@@ -165,7 +165,7 @@ export function SnapshotCard({
           }}
           className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-3 text-left"
         >
-          <CardTitle>{collectedLabel}</CardTitle>
+          <CardTitle className="text-sm">{collectedLabel}</CardTitle>
           <ChevronDown
             className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           />

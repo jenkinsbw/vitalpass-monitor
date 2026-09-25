@@ -9,11 +9,11 @@ import { loginSchema } from "@/lib/auth-schemas";
 import { db } from "@/lib/db";
 import { createSiteSchema, OriginError } from "@/lib/sites";
 import { createUserSchema, updateUserSchema } from "@/lib/users";
-import type { SnapshotDetail, SnapshotSummary } from "@/lib/snapshots";
+import type { SnapshotDetail, SnapshotPage } from "@/lib/snapshots";
 import {
   createSnapshotForSite,
   getSnapshotDetail,
-  listRecentSnapshots,
+  listSnapshotPage,
 } from "@/server/snapshots";
 import { createSiteRecord, DuplicateSiteError } from "@/server/sites";
 import {
@@ -31,10 +31,7 @@ export type ActionState = {
   detail?: string;
 } | null;
 
-export type SnapshotListResult = {
-  snapshots: SnapshotSummary[];
-  hasMore: boolean;
-};
+export type SnapshotListResult = SnapshotPage;
 
 export type SnapshotDetailResult =
   | { snapshot: SnapshotDetail }
@@ -161,16 +158,17 @@ export async function collectSnapshot(
   }
 }
 
-export async function listRecentSnapshotsAction(
+export async function listSnapshotPageAction(
   siteId: string,
+  page: number,
 ): Promise<SnapshotListResult> {
   await requireUser();
 
   if (siteId.length === 0) {
-    return { snapshots: [], hasMore: false };
+    return { snapshots: [], page: 1, pageCount: 1 };
   }
 
-  return listRecentSnapshots(siteId);
+  return listSnapshotPage(siteId, page);
 }
 
 export async function getSnapshotDetailAction(

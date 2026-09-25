@@ -3,11 +3,18 @@ export {
   formatCruxScope,
   formatFormFactor,
   homeUrlFromOrigin,
+  queryOriginHistory,
   queryOriginRecord,
+  queryUrlHistory,
   queryUrlRecord,
   type CruxFormFactor,
 } from "@/lib/crux/client";
 export { CruxError } from "@/lib/crux/errors";
+export {
+  HISTORY_WEEKS,
+  latestHistoryPoints,
+  type CruxHistoryPoint,
+} from "@/lib/crux/history";
 export {
   parseCruxResponse,
   tryParseCruxResponse,

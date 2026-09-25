@@ -23,9 +23,6 @@ export function listSites() {
 export function getSite(id: string) {
   return db.site.findUnique({
     where: { id },
-    include: {
-      _count: { select: { snapshots: true } },
-    },
   });
 }
 
