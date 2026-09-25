@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { CruxScopeTabs } from "@/components/crux-scope-tabs";
 import {
   Card,
   CardContent,
@@ -9,14 +8,11 @@ import {
 } from "@/components/ui/card";
 import { VitalsDistributionChart } from "@/components/vitals-distribution-chart";
 import { formatFormFactor, homeUrlFromOrigin } from "@/lib/crux";
-import { cn } from "@/lib/utils";
 import { formatCollectionPeriod } from "@/lib/vitals";
 import {
   getCurrentMonthRecords,
   type CurrentMonthResult,
 } from "@/server/crux";
-
-export type CruxScope = "origin" | "home";
 
 function collectionPeriodFrom(result: CurrentMonthResult): string | null {
   if (result.status !== "ready") {
@@ -97,58 +93,7 @@ function ChartsGrid({
   );
 }
 
-function ScopeTabs({
-  siteId,
-  scope,
-}: {
-  siteId: string;
-  scope: CruxScope;
-}) {
-  const tabs = [
-    { id: "origin" as const, label: "Origin" },
-    { id: "home" as const, label: "Home" },
-  ];
-
-  return (
-    <div
-      role="tablist"
-      aria-label="CrUX scope"
-      className="flex w-fit gap-1 rounded-lg border p-1"
-    >
-      {tabs.map((tab) => {
-        const selected = scope === tab.id;
-
-        return (
-          <Link
-            key={tab.id}
-            href={`/sites/${siteId}?scope=${tab.id}`}
-            scroll={false}
-            role="tab"
-            aria-selected={selected}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              selected
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-export async function CurrentMonthCharts({
-  origin,
-  siteId,
-  scope,
-}: {
-  origin: string;
-  siteId: string;
-  scope: CruxScope;
-}) {
+export async function CurrentMonthCharts({ origin }: { origin: string }) {
   const homeUrl = homeUrlFromOrigin(origin);
   const [originResult, homeResult] = await Promise.all([
     getCurrentMonthRecords({ kind: "origin", origin }),
@@ -157,11 +102,6 @@ export async function CurrentMonthCharts({
 
   const period =
     collectionPeriodFrom(originResult) ?? collectionPeriodFrom(homeResult);
-  const activeResult = scope === "home" ? homeResult : originResult;
-  const emptyMessage =
-    scope === "home"
-      ? "CrUX has no page-level data for the home URL."
-      : "CrUX has no data for this origin.";
 
   return (
     <div className="flex flex-col gap-4">
@@ -180,10 +120,20 @@ export async function CurrentMonthCharts({
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <ScopeTabs siteId={siteId} scope={scope} />
-        <ChartsGrid result={activeResult} emptyMessage={emptyMessage} />
-      </div>
+      <CruxScopeTabs
+        origin={
+          <ChartsGrid
+            result={originResult}
+            emptyMessage="CrUX has no data for this origin."
+          />
+        }
+        home={
+          <ChartsGrid
+            result={homeResult}
+            emptyMessage="CrUX has no page-level data for the home URL."
+          />
+        }
+      />
     </div>
   );
 }
@@ -227,9 +177,4 @@ export function CurrentMonthChartsFallback() {
       </div>
     </div>
   );
-}
-
-export function parseCruxScope(value: string | string[] | undefined): CruxScope {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return raw === "home" ? "home" : "origin";
 }

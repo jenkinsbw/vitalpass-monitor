@@ -6,7 +6,6 @@ import { CollectForm } from "@/components/collect-form";
 import {
   CurrentMonthCharts,
   CurrentMonthChartsFallback,
-  parseCruxScope,
 } from "@/components/current-month-charts";
 import { SnapshotCard } from "@/components/snapshot-card";
 import {
@@ -22,16 +21,10 @@ export const dynamic = "force-dynamic";
 
 export default async function SitePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{
-    scope?: string | string[];
-  }>;
 }) {
   const { id } = await params;
-  const { scope: scopeParam } = await searchParams;
-  const scope = parseCruxScope(scopeParam);
   const site = await getSite(id);
 
   if (!site) {
@@ -59,11 +52,7 @@ export default async function SitePage({
 
       <section>
         <Suspense fallback={<CurrentMonthChartsFallback />}>
-          <CurrentMonthCharts
-            origin={site.origin}
-            siteId={site.id}
-            scope={scope}
-          />
+          <CurrentMonthCharts origin={site.origin} />
         </Suspense>
       </section>
 
