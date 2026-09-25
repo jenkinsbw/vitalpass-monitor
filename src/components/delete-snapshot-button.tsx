@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,11 +33,16 @@ export function DeleteSnapshotButton({
   onDeleted,
 }: DeleteSnapshotButtonProps) {
   const [state, action, pending] = useActionState(deleteSnapshot, initialState);
+  const toasted = useRef<ActionState>(null);
 
   useEffect(() => {
-    if (state?.success) {
-      onDeleted();
+    if (!state?.success || toasted.current === state) {
+      return;
     }
+
+    toasted.current = state;
+    toast.success(state.success);
+    onDeleted();
   }, [state, onDeleted]);
 
   return (

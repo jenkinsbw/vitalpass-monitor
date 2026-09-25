@@ -28,6 +28,7 @@ import {
 export type ActionState = {
   error?: string;
   success?: string;
+  detail?: string;
 } | null;
 
 export type SnapshotListResult = {
@@ -144,7 +145,8 @@ export async function collectSnapshot(
 
     if (result.warnings.length > 0) {
       return {
-        success: `Snapshot saved. ${result.warnings.join(" ")}`,
+        success: "Snapshot saved.",
+        detail: result.warnings.join(" "),
       };
     }
 

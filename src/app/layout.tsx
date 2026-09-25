@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { Toaster } from "@/components/ui/sonner";
 import { UserMenu } from "@/components/user-menu";
 
 import "./globals.css";
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">
           {children}
         </main>
+        <Toaster />
       </body>
     </html>
   );
