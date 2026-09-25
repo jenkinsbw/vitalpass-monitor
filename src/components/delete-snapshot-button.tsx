@@ -1,0 +1,93 @@
+"use client";
+
+import { Trash2Icon } from "lucide-react";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteSnapshot, type ActionState } from "@/server/actions";
+
+const initialState: ActionState = null;
+
+type DeleteSnapshotButtonProps = {
+  snapshotId: string;
+  siteId: string;
+  label: string;
+  onDeleted: () => void;
+};
+
+export function DeleteSnapshotButton({
+  snapshotId,
+  siteId,
+  label,
+  onDeleted,
+}: DeleteSnapshotButtonProps) {
+  const [state, action, pending] = useActionState(deleteSnapshot, initialState);
+  const toasted = useRef<ActionState>(null);
+
+  useEffect(() => {
+    if (!state?.success || toasted.current === state) {
+      return;
+    }
+
+    toasted.current = state;
+    toast.success(state.success);
+    onDeleted();
+  }, [state, onDeleted]);
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="destructive"
+            size="sm"
+            type="button"
+            className="cursor-pointer"
+          />
+        }
+      >
+        <Trash2Icon data-icon="inline-start" />
+        Delete
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this snapshot?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {label}. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {state?.error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {state.error}
+          </p>
+        ) : null}
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <form action={action}>
+            <input type="hidden" name="id" value={snapshotId} />
+            <input type="hidden" name="siteId" value={siteId} />
+            <AlertDialogAction
+              type="submit"
+              variant="destructive"
+              disabled={pending}
+            >
+              {pending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </form>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

@@ -1,5 +1,7 @@
+import { ClockIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 
+import { DeleteSiteButton } from "@/components/delete-site-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -23,7 +25,11 @@ export default async function HomePage() {
             Origins monitored with the Chrome UX Report.
           </p>
         </div>
-        <Link href="/sites/new" className={buttonVariants()}>
+        <Link
+          href="/sites/new"
+          className={buttonVariants({ variant: "success" })}
+        >
+          <PlusIcon data-icon="inline-start" />
           Add site
         </Link>
       </div>
@@ -41,19 +47,38 @@ export default async function HomePage() {
         <ul className="flex flex-col gap-2">
           {sites.map((site) => (
             <li key={site.id}>
-              <Link href={`/sites/${site.id}`} className="block">
-                <Card
-                  size="sm"
-                  className="transition-colors hover:bg-muted/40"
-                >
-                  <CardHeader className="flex flex-row items-center gap-3">
+              <Card
+                size="sm"
+                className="relative transition-colors hover:bg-muted/40"
+              >
+                <CardHeader className="flex flex-row items-center gap-3">
+                  <Link
+                    href={`/sites/${site.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-3 after:absolute after:inset-0"
+                  >
                     <CardTitle className="shrink-0">{site.name}</CardTitle>
                     <CardDescription className="truncate">
                       {site.origin}
                     </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
+                    <ClockIcon
+                      role="img"
+                      aria-label={
+                        site.weeklyCheckEnabled
+                          ? "Weekly check on"
+                          : "Weekly check off"
+                      }
+                      className={
+                        site.weeklyCheckEnabled
+                          ? "ml-auto size-4 shrink-0 text-green-600"
+                          : "ml-auto size-4 shrink-0 text-muted-foreground"
+                      }
+                    />
+                  </Link>
+                  <div className="relative z-10 shrink-0">
+                    <DeleteSiteButton siteId={site.id} />
+                  </div>
+                </CardHeader>
+              </Card>
             </li>
           ))}
         </ul>

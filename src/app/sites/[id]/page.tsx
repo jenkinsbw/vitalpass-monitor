@@ -1,19 +1,17 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { BackLink } from "@/components/back-link";
-import { CollectForm } from "@/components/collect-form";
-import { ClsValue, InpValue, LcpValue } from "@/components/metric-value";
-import { Badge } from "@/components/ui/badge";
+import { DeleteSiteButton } from "@/components/delete-site-button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { formatFormFactor } from "@/lib/crux";
-import { env } from "@/lib/env";
-import { formatCollectedAt } from "@/lib/vitals";
+  CurrentMonthCharts,
+  CurrentMonthChartsFallback,
+} from "@/components/current-month-charts";
+import { SiteAlerts } from "@/components/site-alerts";
+import { SnapshotList } from "@/components/snapshot-list";
+import { SnapshotRefreshProvider } from "@/components/snapshot-refresh";
+import { WeeklyCheckToggle } from "@/components/weekly-check-toggle";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSite } from "@/server/sites";
 
 export const dynamic = "force-dynamic";
@@ -31,62 +29,38 @@ export default async function SitePage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col items-start gap-3">
+    <SnapshotRefreshProvider>
+      <div className="flex flex-col gap-6">
+        <div className="flex w-full flex-col gap-3">
           <BackLink href="/">Back to Sites</BackLink>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {site.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">{site.origin}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{site.name}</h1>
+          <div className="flex w-full items-center justify-between gap-4">
+            <p className="min-w-0 truncate text-sm text-muted-foreground">
+              {site.origin}
+            </p>
+            <DeleteSiteButton siteId={site.id} />
+          </div>
         </div>
-        {env.CRUX_API_KEY ? (
-          <CollectForm siteId={site.id} />
-        ) : (
-          <p className="max-w-xs text-sm text-muted-foreground">
-            Set CRUX_API_KEY in .env and restart the server to fetch snapshots.
-          </p>
-        )}
-      </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Snapshots</h2>
-        {site.snapshots.length === 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>No snapshots yet</CardTitle>
-              <CardDescription>
-                Fetch the current CrUX record for phone and desktop.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {site.snapshots.map((snapshot) => (
-              <li key={snapshot.id}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex flex-wrap items-center gap-2">
-                      {formatCollectedAt(snapshot.collectedAt)}
-                      <Badge variant="outline">
-                        {formatFormFactor(snapshot.formFactor)}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      Collection period {snapshot.collectionPeriod}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-6">
-                    <LcpValue milliseconds={snapshot.lcp} />
-                    <InpValue milliseconds={snapshot.inp} />
-                    <ClsValue value={snapshot.cls} />
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+        <Card className="gap-0">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-4">
+            <CardTitle>Weekly check</CardTitle>
+            <WeeklyCheckToggle
+              siteId={site.id}
+              enabled={site.weeklyCheckEnabled}
+            />
+          </CardHeader>
+          <SiteAlerts siteId={site.id} />
+        </Card>
+
+        <section>
+          <Suspense fallback={<CurrentMonthChartsFallback siteId={site.id} />}>
+            <CurrentMonthCharts origin={site.origin} siteId={site.id} />
+          </Suspense>
+        </section>
+
+        <SnapshotList siteId={site.id} />
+      </div>
+    </SnapshotRefreshProvider>
   );
 }

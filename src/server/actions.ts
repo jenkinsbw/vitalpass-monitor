@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@/generated/prisma/client";
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -8,16 +7,20 @@ import { redirect } from "next/navigation";
 import { auth, signIn, signOut } from "@/auth";
 import { loginSchema } from "@/lib/auth-schemas";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
-import {
-  CRUX_FORM_FACTORS,
-  CruxError,
-  formatFormFactor,
-  queryOriginRecord,
-} from "@/lib/crux";
 import { createSiteSchema, OriginError } from "@/lib/sites";
 import { createUserSchema, updateUserSchema } from "@/lib/users";
-import { createSiteRecord, DuplicateSiteError } from "@/server/sites";
+import type { SnapshotDetail, SnapshotPage } from "@/lib/snapshots";
+import {
+  createSnapshotForSite,
+  getSnapshotDetail,
+  listSnapshotPage,
+} from "@/server/snapshots";
+import {
+  createSiteRecord,
+  deleteSiteRecord,
+  DuplicateSiteError,
+  SiteNotFoundError,
+} from "@/server/sites";
 import {
   createUserRecord,
   deleteUserRecord,
@@ -28,8 +31,16 @@ import {
 } from "@/server/users";
 
 export type ActionState = {
-  error: string;
+  error?: string;
+  success?: string;
+  detail?: string;
 } | null;
+
+export type SnapshotListResult = SnapshotPage;
+
+export type SnapshotDetailResult =
+  | { snapshot: SnapshotDetail }
+  | { error: string };
 
 function firstIssue(error: { issues: { message: string }[] }): string {
   return error.issues[0]?.message ?? "Check the form and try again.";
@@ -87,6 +98,7 @@ export async function createSite(
   const parsed = createSiteSchema.safeParse({
     name: formData.get("name"),
     origin: formData.get("origin"),
+    weeklyCheckEnabled: formData.get("weeklyCheckEnabled") === "on",
   });
 
   if (!parsed.success) {
@@ -111,6 +123,71 @@ export async function createSite(
   redirect(`/sites/${siteId}`);
 }
 
+export async function deleteSite(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const id = formData.get("id");
+
+  if (typeof id !== "string" || id.length === 0) {
+    return { error: "Missing site." };
+  }
+
+  try {
+    await deleteSiteRecord(id);
+  } catch (error) {
+    if (error instanceof SiteNotFoundError) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to delete site", error);
+    return { error: "Could not delete the site." };
+  }
+
+  revalidatePath("/");
+  redirect("/");
+}
+
+export async function setWeeklyCheck(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const siteId = formData.get("siteId");
+  const enabled = formData.get("enabled");
+
+  if (typeof siteId !== "string" || siteId.length === 0) {
+    return { error: "Missing site." };
+  }
+
+  if (enabled !== "true" && enabled !== "false") {
+    return { error: "Missing weekly check setting." };
+  }
+
+  const site = await db.site.findUnique({ where: { id: siteId } });
+
+  if (!site) {
+    return { error: "Site not found." };
+  }
+
+  await db.site.update({
+    where: { id: site.id },
+    data: { weeklyCheckEnabled: enabled === "true" },
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/sites/${site.id}`);
+  return {
+    success:
+      enabled === "true"
+        ? "Weekly check turned on."
+        : "Weekly check turned off.",
+  };
+}
+
 export async function collectSnapshot(
   _state: ActionState,
   formData: FormData,
@@ -129,53 +206,92 @@ export async function collectSnapshot(
     return { error: "Site not found." };
   }
 
-  if (!env.CRUX_API_KEY) {
-    return { error: "Set CRUX_API_KEY in .env and restart the server." };
-  }
+  try {
+    const result = await createSnapshotForSite(site);
+    revalidatePath("/");
+    revalidatePath(`/sites/${site.id}`);
 
-  const collectedAt = new Date();
-  const errors: string[] = [];
-  let created = 0;
-
-  for (const formFactor of CRUX_FORM_FACTORS) {
-    try {
-      const metrics = await queryOriginRecord({
-        origin: site.origin,
-        formFactor,
-        apiKey: env.CRUX_API_KEY,
-      });
-
-      await db.cruxSnapshot.create({
-        data: {
-          siteId: site.id,
-          formFactor,
-          collectedAt,
-          lcp: metrics.lcp,
-          inp: metrics.inp,
-          cls: metrics.cls,
-          collectionPeriod: metrics.collectionPeriod,
-          raw: metrics.raw as Prisma.InputJsonValue,
-        },
-      });
-      created += 1;
-    } catch (error) {
-      if (error instanceof CruxError) {
-        errors.push(`${formatFormFactor(formFactor)}: ${error.message}`);
-        continue;
-      }
-
-      console.error("Failed to collect CrUX snapshot", error);
-      return { error: "Could not collect a snapshot." };
+    if (result.warnings.length > 0) {
+      return {
+        success: "Snapshot saved.",
+        detail: result.warnings.join(" "),
+      };
     }
+
+    return { success: "Snapshot saved." };
+  } catch (error) {
+    if (error instanceof Error && error.message) {
+      return { error: error.message };
+    }
+
+    console.error("Failed to collect CrUX snapshot", error);
+    return { error: "Could not save a snapshot." };
+  }
+}
+
+export async function listSnapshotPageAction(
+  siteId: string,
+  page: number,
+): Promise<SnapshotListResult> {
+  await requireUser();
+
+  if (siteId.length === 0) {
+    return { snapshots: [], page: 1, pageCount: 1 };
   }
 
-  if (created === 0) {
-    return { error: errors[0] ?? "Could not collect a snapshot." };
+  return listSnapshotPage(siteId, page);
+}
+
+export async function getSnapshotDetailAction(
+  snapshotId: string,
+  siteId: string,
+): Promise<SnapshotDetailResult> {
+  await requireUser();
+
+  if (snapshotId.length === 0 || siteId.length === 0) {
+    return { error: "Missing snapshot." };
   }
+
+  const snapshot = await getSnapshotDetail(snapshotId, siteId);
+
+  if (!snapshot) {
+    return { error: "Snapshot not found." };
+  }
+
+  return { snapshot };
+}
+
+export async function deleteSnapshot(
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireUser();
+
+  const id = formData.get("id");
+  const siteId = formData.get("siteId");
+
+  if (typeof id !== "string" || id.length === 0) {
+    return { error: "Missing snapshot." };
+  }
+
+  if (typeof siteId !== "string" || siteId.length === 0) {
+    return { error: "Missing site." };
+  }
+
+  const snapshot = await db.snapshot.findFirst({
+    where: { id, siteId },
+    select: { id: true, siteId: true },
+  });
+
+  if (!snapshot) {
+    return { error: "Snapshot not found." };
+  }
+
+  await db.snapshot.delete({ where: { id: snapshot.id } });
 
   revalidatePath("/");
-  revalidatePath(`/sites/${site.id}`);
-  return null;
+  revalidatePath(`/sites/${snapshot.siteId}`);
+  return { success: "Snapshot deleted." };
 }
 
 export async function createUser(
@@ -283,5 +399,5 @@ export async function deleteUser(
   }
 
   revalidatePath("/users");
-  return null;
+  redirect("/users");
 }
