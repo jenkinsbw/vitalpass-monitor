@@ -42,7 +42,7 @@ export function CollectForm({ siteId }: { siteId: string }) {
       <form action={action}>
         <input type="hidden" name="siteId" value={siteId} />
         <Button type="submit" disabled={pending}>
-          Save Snapshot
+          Take snapshot
         </Button>
       </form>
       {pending ? <SavingSnapshotOverlay /> : null}

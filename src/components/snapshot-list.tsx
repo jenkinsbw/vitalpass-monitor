@@ -80,7 +80,7 @@ export function SnapshotList({ siteId }: { siteId: string }) {
           <CardHeader>
             <CardTitle>No snapshots yet</CardTitle>
             <CardDescription>
-              Use Save Snapshot to store origin and home for phone and desktop.
+              Use Take snapshot to store origin and home for phone and desktop.
             </CardDescription>
           </CardHeader>
         </Card>

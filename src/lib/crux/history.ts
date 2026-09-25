@@ -115,7 +115,7 @@ export function parseCruxHistoryResponse(body: unknown): CruxHistoryPoint[] {
   return points;
 }
 
-export const HISTORY_WEEKS = 15;
+export const HISTORY_WEEKS = 20;
 
 export function latestHistoryPoints(
   points: CruxHistoryPoint[],

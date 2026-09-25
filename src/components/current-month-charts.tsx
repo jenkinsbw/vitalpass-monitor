@@ -1,3 +1,4 @@
+import { CollectForm } from "@/components/collect-form";
 import { CruxScopeTabs } from "@/components/crux-scope-tabs";
 import {
   Card,
@@ -8,7 +9,8 @@ import {
 } from "@/components/ui/card";
 import { VitalsDistributionChart } from "@/components/vitals-distribution-chart";
 import { VitalsTrendChart } from "@/components/vitals-trend-chart";
-import { formatFormFactor, homeUrlFromOrigin } from "@/lib/crux";
+import { formatFormFactor, HISTORY_WEEKS, homeUrlFromOrigin } from "@/lib/crux";
+import { env } from "@/lib/env";
 import { formatCollectionPeriod } from "@/lib/vitals";
 import {
   getCurrentMonthRecords,
@@ -113,10 +115,7 @@ function TrendGrid({ result }: { result: WeeklyTrendResult }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Last 15 weeks</CardTitle>
-        <CardDescription>
-          Weekly p75 for phone and desktop on the same chart.
-        </CardDescription>
+        <CardTitle>Last {HISTORY_WEEKS} weeks</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {hasPoints ? (
@@ -139,13 +138,30 @@ function TrendGrid({ result }: { result: WeeklyTrendResult }) {
   );
 }
 
-export async function CurrentMonthCharts({ origin }: { origin: string }) {
+function SnapshotAction({ siteId }: { siteId: string }) {
+  if (!env.CRUX_API_KEY) {
+    return (
+      <p className="max-w-xs text-sm text-muted-foreground">
+        Set CRUX_API_KEY in .env and restart the server to save snapshots.
+      </p>
+    );
+  }
+
+  return <CollectForm siteId={siteId} />;
+}
+
+export async function CurrentMonthCharts({
+  origin,
+  siteId,
+}: {
+  origin: string;
+  siteId: string;
+}) {
   const homeUrl = homeUrlFromOrigin(origin);
-  const [originResult, homeResult, originTrend, homeTrend] = await Promise.all([
+  const [originResult, homeResult, trend] = await Promise.all([
     getCurrentMonthRecords({ kind: "origin", origin }),
     getCurrentMonthRecords({ kind: "url", url: homeUrl }),
     getWeeklyTrend({ kind: "origin", origin }),
-    getWeeklyTrend({ kind: "url", url: homeUrl }),
   ]);
 
   const period =
@@ -162,37 +178,30 @@ export async function CurrentMonthCharts({ origin }: { origin: string }) {
             </span>
           ) : null}
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Real-user LCP, INP, and CLS for the current 28-day collection
-          period, for the whole origin and the home page.
-        </p>
       </div>
 
       <CruxScopeTabs
         origin={
-          <div className="flex flex-col gap-6">
-            <ChartsGrid
-              result={originResult}
-              emptyMessage="CrUX has no data for this origin."
-            />
-            <TrendGrid result={originTrend} />
-          </div>
+          <ChartsGrid
+            result={originResult}
+            emptyMessage="CrUX has no data for this origin."
+          />
         }
         home={
-          <div className="flex flex-col gap-6">
-            <ChartsGrid
-              result={homeResult}
-              emptyMessage="CrUX has no page-level data for the home URL."
-            />
-            <TrendGrid result={homeTrend} />
-          </div>
+          <ChartsGrid
+            result={homeResult}
+            emptyMessage="CrUX has no page-level data for the home URL."
+          />
         }
+        action={<SnapshotAction siteId={siteId} />}
       />
+
+      <TrendGrid result={trend} />
     </div>
   );
 }
 
-export function CurrentMonthChartsFallback() {
+export function CurrentMonthChartsFallback({ siteId }: { siteId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -200,16 +209,15 @@ export function CurrentMonthChartsFallback() {
           <span>This month</span>
           <span className="h-4 w-40 animate-pulse rounded bg-muted" />
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Real-user LCP, INP, and CLS for the current 28-day collection
-          period, for the whole origin and the home page.
-        </p>
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex w-fit gap-1 rounded-lg border p-1">
-          <div className="h-8 w-16 rounded-md bg-muted" />
-          <div className="h-8 w-14 rounded-md" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex w-fit gap-1 rounded-lg border p-1">
+            <div className="h-8 w-16 rounded-md bg-muted" />
+            <div className="h-8 w-14 rounded-md" />
+          </div>
+          <SnapshotAction siteId={siteId} />
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {["Phone", "Desktop"].map((label) => (
