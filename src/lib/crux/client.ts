@@ -35,6 +35,10 @@ export function formatFormFactor(formFactor: CruxFormFactor): string {
   return formFactor === "PHONE" ? "Phone" : "Desktop";
 }
 
+export function formatCruxScope(scope: "ORIGIN" | "HOME"): string {
+  return scope === "ORIGIN" ? "Origin" : "Home";
+}
+
 export function homeUrlFromOrigin(origin: string): string {
   return new URL("/", origin).href;
 }

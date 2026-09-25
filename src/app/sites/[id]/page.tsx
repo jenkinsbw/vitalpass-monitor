@@ -7,13 +7,8 @@ import {
   CurrentMonthCharts,
   CurrentMonthChartsFallback,
 } from "@/components/current-month-charts";
-import { SnapshotCard } from "@/components/snapshot-card";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SnapshotList } from "@/components/snapshot-list";
+import { SnapshotRefreshProvider } from "@/components/snapshot-refresh";
 import { env } from "@/lib/env";
 import { getSite } from "@/server/sites";
 
@@ -32,58 +27,36 @@ export default async function SitePage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col items-start gap-3">
-          <BackLink href="/">Back to Sites</BackLink>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {site.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">{site.origin}</p>
+    <SnapshotRefreshProvider>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col items-start gap-3">
+            <BackLink href="/">Back to Sites</BackLink>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {site.name}
+            </h1>
+            <p className="text-sm text-muted-foreground">{site.origin}</p>
+          </div>
+          {env.CRUX_API_KEY ? (
+            <CollectForm siteId={site.id} />
+          ) : (
+            <p className="max-w-xs text-sm text-muted-foreground">
+              Set CRUX_API_KEY in .env and restart the server to save snapshots.
+            </p>
+          )}
         </div>
-        {env.CRUX_API_KEY ? (
-          <CollectForm siteId={site.id} />
-        ) : (
-          <p className="max-w-xs text-sm text-muted-foreground">
-            Set CRUX_API_KEY in .env and restart the server to save snapshots.
-          </p>
-        )}
+
+        <section>
+          <Suspense fallback={<CurrentMonthChartsFallback />}>
+            <CurrentMonthCharts origin={site.origin} />
+          </Suspense>
+        </section>
+
+        <SnapshotList
+          siteId={site.id}
+          snapshotCount={site._count.snapshots}
+        />
       </div>
-
-      <section>
-        <Suspense fallback={<CurrentMonthChartsFallback />}>
-          <CurrentMonthCharts origin={site.origin} />
-        </Suspense>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-lg font-medium">Snapshots</h2>
-          <p className="text-sm text-muted-foreground">
-            Saved origin records from Save Snapshot. Expand a snapshot to see
-            the same LCP, INP, and CLS distribution as above.
-          </p>
-        </div>
-        {site.snapshots.length === 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>No snapshots yet</CardTitle>
-              <CardDescription>
-                Use Save Snapshot to store the current origin record for phone
-                and desktop.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {site.snapshots.map((snapshot) => (
-              <li key={snapshot.id}>
-                <SnapshotCard snapshot={snapshot} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    </SnapshotRefreshProvider>
   );
 }

@@ -1,5 +1,6 @@
 export {
   CRUX_FORM_FACTORS,
+  formatCruxScope,
   formatFormFactor,
   homeUrlFromOrigin,
   queryOriginRecord,

@@ -17,12 +17,6 @@ export class DuplicateSiteError extends Error {
 export function listSites() {
   return db.site.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      snapshots: {
-        orderBy: [{ collectedAt: "desc" }, { formFactor: "asc" }],
-        take: 2,
-      },
-    },
   });
 }
 
@@ -30,9 +24,7 @@ export function getSite(id: string) {
   return db.site.findUnique({
     where: { id },
     include: {
-      snapshots: {
-        orderBy: [{ collectedAt: "desc" }, { formFactor: "asc" }],
-      },
+      _count: { select: { snapshots: true } },
     },
   });
 }
