@@ -6,21 +6,25 @@ export type VitalsDistribution = {
   poor: number;
 };
 
+export const lcpThresholds = { good: 2500, needsImprovement: 4000 } as const;
+export const inpThresholds = { good: 200, needsImprovement: 500 } as const;
+export const clsThresholds = { good: 0.1, needsImprovement: 0.25 } as const;
+
 export function rateLcp(milliseconds: number): VitalRating {
-  if (milliseconds <= 2500) return "good";
-  if (milliseconds <= 4000) return "needs-improvement";
+  if (milliseconds <= lcpThresholds.good) return "good";
+  if (milliseconds <= lcpThresholds.needsImprovement) return "needs-improvement";
   return "poor";
 }
 
 export function rateInp(milliseconds: number): VitalRating {
-  if (milliseconds <= 200) return "good";
-  if (milliseconds <= 500) return "needs-improvement";
+  if (milliseconds <= inpThresholds.good) return "good";
+  if (milliseconds <= inpThresholds.needsImprovement) return "needs-improvement";
   return "poor";
 }
 
 export function rateCls(value: number): VitalRating {
-  if (value <= 0.1) return "good";
-  if (value <= 0.25) return "needs-improvement";
+  if (value <= clsThresholds.good) return "good";
+  if (value <= clsThresholds.needsImprovement) return "needs-improvement";
   return "poor";
 }
 
