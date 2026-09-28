@@ -3,6 +3,7 @@ import "server-only";
 import { CruxError, queryOriginAggregate } from "@/lib/crux";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { notifySlackAlert } from "@/lib/slack";
 import { leavesGoodRange } from "@/lib/vitals";
 
 export type WeeklyVitalsCheckResult = {
@@ -51,6 +52,14 @@ export async function runWeeklyVitalsCheck(): Promise<WeeklyVitalsCheckResult> {
         },
       });
       alerts += 1;
+
+      await notifySlackAlert({
+        siteName: site.name,
+        origin: site.origin,
+        lcp: values.lcp,
+        inp: values.inp,
+        cls: values.cls,
+      });
     } catch (error) {
       const message =
         error instanceof CruxError
